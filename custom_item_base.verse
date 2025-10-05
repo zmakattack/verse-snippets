@@ -4,6 +4,50 @@ using { /Fortnite.com/Itemization }
 using { /Fortnite.com/Itemization/FortniteItemCategories }
 using { /Verse.org/Simulation }
 using { /Fortnite.com/Playspaces }
+using { /Verse.org }
+using { /Verse.org/Assets }
+using { /Verse.org/SceneGraph }
+
+#Example usage
+#-----------------------------------------------------
+# copy this into a new folder and rename the class
+#-----------------------------------------------------
+my_item := class(agent_item_base_component):
+
+    ItemStackChanged<override>(NewAmount : int,MaybePlayer : ?agent) : void =
+        Print("There are now {NewAmount} items in the stack")
+
+    Initialized<override>() : void =
+        Print("Initializing code here")
+
+    Equipped<override>(Player : agent) : void =
+        Print("Equipped")
+
+    Unequipped<override>(Player : agent) : void =
+        Print("Unequipped")
+            
+    PickedUp<override>(Player : agent) : void =
+        Print("Picked up")
+
+    Dropped<override>(Player : agent) : void =
+        Print("Dropped")
+#------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 (Inventory:inventory_component).GetOwningAgent()<transacts><decides>:agent = {
     var _InventoryOwner : ?agent = false
 
@@ -23,7 +67,7 @@ using { /Fortnite.com/Playspaces }
     _InventoryOwner?
 }
 
-agent_item_base_component := class(item_component):
+agent_item_base_component := class(item_component,has_description,has_icon):
 
 
     CanDrop : logic = true
@@ -39,49 +83,67 @@ agent_item_base_component := class(item_component):
         #var PickupLifetime<override>:float = 1000.0
 
     var StoredPlayer : ?agent = false
-    GetHoldingPlayer() : ?agent =
+    GetHoldingPlayer() : tuple(?agent,logic) =
+        MaybePlayer := option:
+            GetParentInventory[].GetOwningAgent[]
+        if (MaybePlayer?):
+            set StoredPlayer = MaybePlayer
+            return (MaybePlayer,true)
+
         if (StoredPlayer?):
             Player := StoredPlayer
             set StoredPlayer = false
-            return Player
+            return (Player,false)
 
-        MaybePlayer := option:
-            GetParentInventory[].GetOwningAgent[]
 
 
         set StoredPlayer = MaybePlayer
-        return MaybePlayer
-    var FlipFlop : logic = false
+        return (MaybePlayer,false)
+
+
+    var<private> Inited<private> : logic = false
     OnBeginSimulation<override>():void = 
         (super:)OnBeginSimulation()
- 
+        if (not Inited?):
+            set Inited = true
+            Initialized()
+            #if (not Entity.GetComponent[])
+            DetailsComp : component = item_details_component:
+                Entity := Entity
+                Name := Name
+                Description := Description
+                ShortDescription := ShortDescription
+            IconComp : component = item_icon_component:
+                Entity := Entity
+                Icon := Icon
+            PickupComp : component = fort_item_pickup_component:
+                Entity := Entity
+            Entity.AddComponents(array{DetailsComp,IconComp,PickupComp})
         MaybePlayer := GetHoldingPlayer()
-        if (Player := MaybePlayer?):
-            if (not FlipFlop?):
-                set FlipFlop = true
+        if (Player := MaybePlayer(0)?):
+            if (MaybePlayer(1)?):
                 PickedUp(Player)
                 spawn{ControlEquip()}
             else:
-                set FlipFlop = false
                 Dropped(Player)
         spawn:
             ControlStackSize()
+
     ControlStackSize()<suspends> : void =
         race:
             SimulationEnded.Await()
             loop:
                 Result := StackSizeChangedEvent.Await()
-                ItemStackChanged(Result.CurrentStackSize,GetHoldingPlayer())
+                ItemStackChanged(Result.CurrentStackSize,GetHoldingPlayer()(0))
 
     SimulationEnded : event() =event(){}
     ControlEquip()<suspends> : void =
-        Print("Started loop")
         race:
             SimulationEnded.Await()
             loop:
                 Result := EquippedChangedEvent.Await()
                 MaybePlayer := GetHoldingPlayer()
-                if (Player := MaybePlayer?):
+                if (Player := MaybePlayer(0)?,MaybePlayer(1)?):
                     if (Result.IsItemEquipped?):
                         Equipped(Player)
                     else:
