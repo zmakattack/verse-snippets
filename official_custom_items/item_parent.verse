@@ -28,7 +28,8 @@ using { /Verse.org/SceneGraph }
 }
 
 agent_item_base_component := class(item_component,has_description,has_icon):
-
+    @editable
+    var Icon<override>:texture
 
     CanDrop : logic = true
     Drop<override>()<transacts><decides>: void =
@@ -42,23 +43,23 @@ agent_item_base_component := class(item_component,has_description,has_icon):
 
         #var PickupLifetime<override>:float = 1000.0
 
-    var StoredPlayer : ?agent = false
-    GetHoldingPlayer() : tuple(?agent,logic) =
-        MaybePlayer := option:
+    var StoredAgent : ?agent = false
+    GetHoldingAgent() : tuple(?agent,logic) =
+        MaybeAgent := option:
             GetParentInventory[].GetOwningAgent[]
-        if (MaybePlayer?):
-            set StoredPlayer = MaybePlayer
-            return (MaybePlayer,true)
+        if (MaybeAgent?):
+            set StoredAgent = MaybeAgent
+            return (MaybeAgent,true)
 
-        if (StoredPlayer?):
-            Player := StoredPlayer
-            set StoredPlayer = false
-            return (Player,false)
+        if (StoredAgent?):
+            Agent := StoredAgent
+            set StoredAgent = false
+            return (Agent,false)
 
 
 
-        set StoredPlayer = MaybePlayer
-        return (MaybePlayer,false)
+        set StoredAgent = MaybeAgent
+        return (MaybeAgent,false)
 
 
     var<private> Inited<private> : logic = false
@@ -79,13 +80,13 @@ agent_item_base_component := class(item_component,has_description,has_icon):
             PickupComp : component = fort_item_pickup_component:
                 Entity := Entity
             Entity.AddComponents(array{DetailsComp,IconComp,PickupComp})
-        MaybePlayer := GetHoldingPlayer()
-        if (Player := MaybePlayer(0)?):
-            if (MaybePlayer(1)?):
-                PickedUp(Player)
+        MaybeAgent := GetHoldingAgent()
+        if (Agent := MaybeAgent(0)?):
+            if (MaybeAgent(1)?):
+                PickedUp(Agent)
                 spawn{ControlEquip()}
             else:
-                Dropped(Player)
+                Dropped(Agent)
         spawn:
             ControlStackSize()
 
@@ -94,7 +95,7 @@ agent_item_base_component := class(item_component,has_description,has_icon):
             SimulationEnded.Await()
             loop:
                 Result := StackSizeChangedEvent.Await()
-                ItemStackChanged(Result.CurrentStackSize,GetHoldingPlayer()(0))
+                ItemStackChanged(Result.CurrentStackSize,GetHoldingAgent()(0))
 
     SimulationEnded : event() =event(){}
     ControlEquip()<suspends> : void =
@@ -102,12 +103,12 @@ agent_item_base_component := class(item_component,has_description,has_icon):
             SimulationEnded.Await()
             loop:
                 Result := EquippedChangedEvent.Await()
-                MaybePlayer := GetHoldingPlayer()
-                if (Player := MaybePlayer(0)?,MaybePlayer(1)?):
+                MaybeAgent := GetHoldingAgent()
+                if (Agent := MaybeAgent(0)?,MaybeAgent(1)?):
                     if (Result.IsItemEquipped?):
-                        Equipped(Player)
+                        Equipped(Agent)
                     else:
-                        Unequipped(Player)
+                        Unequipped(Agent)
 
 
     OnEndSimulation<override>():void = 
@@ -116,20 +117,20 @@ agent_item_base_component := class(item_component,has_description,has_icon):
         
 
 
-    ItemStackChanged(NewAmount : int,MaybePlayer : ?agent) : void =
+    ItemStackChanged(NewAmount : int,MaybeAgent : ?agent) : void =
         Print("There are now {NewAmount} items in the stack")
 
     Initialized() : void =
         Print("Initializing code here")
 
-    Equipped(Player : agent) : void =
+    Equipped(Agent : agent) : void =
         Print("Equipped")
 
-    Unequipped(Player : agent) : void =
+    Unequipped(Agent : agent) : void =
         Print("Unequipped")
             
-    PickedUp(Player : agent) : void =
+    PickedUp(Agent : agent) : void =
         Print("Picked up")
 
-    Dropped(Player : agent) : void =
+    Dropped(Agent : agent) : void =
         Print("Dropped")
