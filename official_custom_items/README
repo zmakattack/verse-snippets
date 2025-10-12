@@ -1,0 +1,15 @@
+this folder is my handler for propper custom items in verse
+if you wish to learn how my handler works you can look in the `item_parent.verse` file, this is the parent class
+that contains all of the logic for the functions that get called in the child
+
+Currently the functions I have exposed are:
+Picked up
+Dropped
+Equipped
+UnEquipped
+ItemStackChanged
+
+To create your own items utilizing this handler first make a new verse file and import the code that is in `item_parent.verse`
+and then create a new file and import the code that is in `item_child.verse` now you can rename the class, which by default is "my_item"
+and then you can implement the functions.
+I have created a example class at "example_item.verse" which implements some of the functions to make a unique item
