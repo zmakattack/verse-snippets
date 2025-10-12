@@ -14,21 +14,22 @@ using { /Verse.org/SceneGraph }
 #-----------------------------------------------------
 my_item := class(agent_item_base_component):
 
-    ItemStackChanged<override>(NewAmount : int,MaybePlayer : ?agent) : void =
+    ItemStackChanged<override>(NewAmount : int,MaybeAgent : ?agent) : void =
         Print("There are now {NewAmount} items in the stack")
 
     Initialized<override>() : void =
         Print("Initializing code here")
 
-    Equipped<override>(Player : agent) : void =
+    Equipped<override>(Agent : agent) : void =
         Print("Equipped")
 
-    Unequipped<override>(Player : agent) : void =
+    Unequipped<override>(Agent : agent) : void =
         Print("Unequipped")
             
-    PickedUp<override>(Player : agent) : void =
+    PickedUp<override>(Agent : agent) : void =
         Print("Picked up")
 
-    Dropped<override>(Player : agent) : void =
+    Dropped<override>(Agent : agent) : void =
         Print("Dropped")
 #------------------------------------------------------
+
